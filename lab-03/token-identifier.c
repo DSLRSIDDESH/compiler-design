@@ -29,6 +29,138 @@ typedef enum {
     CONSTANT
 } TokenType;
 
+int isInteger(char *str){
+    char qualifiers[] = "uUlL";
+    int token_size = strlen(str);
+    for(int i=0; i<token_size; i++)
+    {
+        if(i==0 && !isdigit(str[i]))
+                return 0;
+        else if(!isdigit(str[i]) && !strchr(qualifiers, str[i]))
+                return 0;
+    }
+    return 1;
+}
+
+
+int isHexOrOcta(char *str){
+    int token_size = strlen(str);
+    int state, check;
+    char dhex[] = "0123456789ABCDEF";
+    char doct[] = "01234567";
+    char qualifiers[] = "uUlL";
+    
+    for(int i=0; i<token_size; i++)
+    {
+        if(i==0 && str[i] != '0')
+                return 0;
+        else
+        {
+            if(i==1)
+            {
+                if(str[i] == 'x' || str[i] == 'X')
+                    state = 1;
+                else if(strchr(doct, str[i]))
+                    state = 2;
+                else
+                    return 0;
+            }
+            else
+            {
+                if(state == 1)
+                {
+                    if(i==2 && !strchr(dhex, str[i]))
+                        return 0;
+                    else if(!strchr(dhex, str[i]) && !strchr(qualifiers, str[i]))
+                        return 0;
+                }
+                else if(!strchr(doct, str[i]) && !strchr(qualifiers, str[i]))
+                    return 1;
+            }
+        }
+    }
+    return 1;
+}
+
+
+int isReal(char *str){
+    int token_size = strlen(str);
+    int state = 0;
+    char qualifiers[] = "fFlL";
+
+    for(int i=0; i<token_size; i++){
+        switch (state)
+        {
+            case 0: 
+                if(isdigit(str[i]))
+                    state = 2;
+                else if(str[i]=='.')
+                    state  = 1;
+                else
+                    state = 4;
+                break;
+            case 1:
+                if(isdigit(str[i]))
+                    state = 3;
+                else
+                    state = 4;
+                break;
+            case 2:
+                if(isdigit(str[i]))
+                    state = 2;
+                else if(str[i] == '.')
+                    state = 3;
+                else if(str[i] == 'E' || str[i] == 'e')
+                    state = 5;
+                else
+                    state = 4;
+                break;
+            case 3:
+                if(isdigit(str[i]))
+                    state = 3;
+                else if(str[i] == 'E' || str[i] == 'e')
+                    state = 5;
+                else
+                    state = 4;
+                break;
+            case 4:
+                return(0);
+            case 5:
+                if(str[i] == '+' || str[i] == '-')
+                    state = 6;
+                else if(isdigit(str[i]))
+                    state = 7;
+                else
+                    state = 8;
+                break;
+            case 6:
+                if(isdigit(str[i]))
+                    state = 7;
+                else
+                    state = 8;
+                break;
+            case 7:
+                if(isdigit(str[i]))
+                    state = 7;
+                else if(strchr(qualifiers, str[i]))
+                    state = 9;
+                else
+                    state = 8;
+            case 8:
+                return(0);
+            case 9:
+                if(str[i])
+                    return(0);
+                break;
+            default:
+                break;
+        }
+        if (state == 4 || state == 8)
+            return 0;
+    }
+    return 1;
+}
+
 int isKeyword(char* token) {
     for (int i = 0; i < num_keywords; i++) {
         if (strcmp(token, keywords[i]) == 0) {
@@ -131,14 +263,7 @@ TokenType getTokenType(char *token){
     if(isKeyword(token)){
         return KEYWORD;
     }
-    else if(isdigit(token[0])){
-        int i=0;
-        while(token[i]!='\0'){
-            if(!isdigit(token[i]) && token[i]!='.'){
-                return IDENTIFIER;
-            }
-            i++;
-        }
+    else if(isInteger(token) || isHexOrOcta(token) || isReal(token)){
         return CONSTANT;
     }
     else{
