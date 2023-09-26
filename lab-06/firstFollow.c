@@ -157,8 +157,23 @@ void print_first(firstFollow table[], int n_s)
     printf("First-Sets:\n");
     for(int i = 0; i < n_s; i++)
     {
-        printf("\tFIRST(%c) = {", table[i].symbol);
-        printf("%s}\n", table[i].first);
+        printf("\tFIRST(%c) = { ", table[i].symbol);
+        for(int j = 0; j < strlen(table[i].first) - 1; j++)
+            printf("%c, ", table[i].first[j]);
+        printf("%c }\n", table[i].first[strlen(table[i].first) - 1]);
+    }
+}
+
+void print_follow(firstFollow table[], int n_s)
+{
+    printf("\nFollow-Sets:\n");
+    for(int i = 0; i < n_s; i++)
+    {
+        printf("\tFOLLOW(%c) = { ", table[i].symbol);
+        int n = strlen(table[i].follow);
+        for(int j = 0; j < n - 1; j++)
+            printf("%c, ", table[i].follow[j]);
+        printf("%c }\n", table[i].follow[n - 1]);
     }
 }
 
@@ -207,7 +222,7 @@ void first(CFG cfg)
                     changing = sets_union(table[index].first, x_first_set, changing);
                     k++;
                 }
-                if(k == n - 1 || if_epsilon(table[x_index].first))
+                if(k == n - 1 && if_epsilon(table[x_index].first))
                 {
                     char *epsilon = "#";
                     changing = sets_union(table[index].first, epsilon, changing);
@@ -216,6 +231,71 @@ void first(CFG cfg)
         }
     }
     print_first(table, n_s);
+}
+
+void follow(CFG cfg)
+{
+    int n_nt = strlen(cfg.nonTerminals);
+    int n_t = strlen(cfg.terminals);
+    int n_s = n_nt + n_t;
+
+    for(int i = 0; i < n_t; i++)    // for each (a ∈ T) FIRST(a) = ∅
+    {
+        table[i].symbol = cfg.terminals[i];
+        strcpy(table[i].follow, "");
+    }
+    for(int i = n_t; i < n_s; i++)  // for each (A ∈ N) FIRST(A) = ∅
+    {
+        table[i].symbol = cfg.nonTerminals[i - n_t];
+        strcpy(table[i].follow, "");
+    }
+    for(int i = 0; i < n_s; i++)    // FOLLOW(S) = {$}
+    {
+        if(table[i].symbol == cfg.startSymbol)
+            table[i].follow[0] = '$';
+    }
+    int changing = 1;
+    while(changing)
+    {
+        changing = 0;
+        for(int i = 0; i < cfg.noOfRules; i++)
+        {
+            for(int j = 0; j < cfg.rules[i].noOfProductions; j++)
+            {
+                char nonTerminal = cfg.rules[i].nonTerminal;
+                char *prod = remove_epsilon(cfg.rules[i].production[j]);
+                if(strlen(prod) == 0)
+                    continue;
+
+                int index = index_in_table(table, nonTerminal, n_s);
+                int k = 0, n = strlen(prod), for_first_x = 1;
+
+                int x_index = index_in_table(table, prod[strlen(prod)-1], n_s);
+                changing = sets_union(table[x_index].follow, table[index].follow, changing);
+
+                char *rest = table[index].follow;
+                for(int k = strlen(prod)-1; k >= 1; k--)
+                {
+                    int x_i_index = index_in_table(table, prod[k], n_s);
+                    char *x_i_first_set = table[x_i_index].first;
+                    char x_i_1 = prod[k - 1];
+                    int x_i_1_index = index_in_table(table, prod[k - 1], n_s);
+                    if(if_epsilon(x_i_first_set))
+                    {
+                        char *x_i_first_set = remove_epsilon(table[x_i_index].first);
+                        changing = sets_union(table[x_i_1_index].follow, x_i_first_set, changing);
+                        changing = sets_union(table[x_i_1_index].follow, rest, changing);
+                    }
+                    else
+                    {
+                        changing = sets_union(table[x_i_1_index].follow, x_i_first_set, changing);
+                    }
+                    rest = table[x_i_index].follow;
+                }
+            }
+        }
+    }
+    print_follow(table, n_s);
 }
 
 int main()
@@ -266,6 +346,7 @@ int main()
     cfg.noOfRules = ruleCount;
     print_cfg();
     first(cfg);
+    follow(cfg);
 
     return 0;
 }
