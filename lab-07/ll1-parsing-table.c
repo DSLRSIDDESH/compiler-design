@@ -469,7 +469,7 @@ void parsing(char s[])
             int j = strchr(cfg.terminals, a) - cfg.terminals;
             if(strcmp(parsing_table[i][j], "") == 0)
             {
-                printf("\n\n[STATUS] String is rejected\n");
+                printf("\n[STATUS] String is rejected\n");
                 exit(1);
             }
             else
@@ -484,14 +484,14 @@ void parsing(char s[])
         }
         else
         {
-            printf("\n\n[STATUS] String is rejected\n");
+            printf("\n[STATUS] String is rejected\n");
             exit(1);
         }
     }
     if(stack[top] == '$' && i == strlen(s))
-        printf("\n\n[STATUS] String is accepted\n");
+        printf("\n[STATUS] String is accepted\n");
     else
-        printf("\n\n[STATUS] String is rejected\n");
+        printf("\n[STATUS] String is rejected\n");
 }
 
 int main()
@@ -550,7 +550,7 @@ int main()
     dirsymb_set(cfg);
     parsingTable();
 
-    printf("Enter the string : ");
+    printf("\n\nEnter the string : ");
     scanf("%s", string);
 
     parsing(string);
